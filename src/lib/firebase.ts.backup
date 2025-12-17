@@ -1,0 +1,228 @@
+PHASE 3 — STEP 3.4
+Export Node.js Code from Google AI Studio
+
+I’ll keep this very practical, no fluff.
+
+🧠 WHAT THIS STEP DOES (5th-grader version)
+
+Right now:
+
+AI works only inside AI Studio ❌
+
+After this step:
+
+You get real Node.js code
+
+That code can run in Firebase Cloud Functions
+
+Your dashboard buttons can call it ✅
+
+Think:
+
+Copy the brain → put it in your server 🧠➡️🖥️
+
+🧱 IMPORTANT RULE BEFORE EXPORTING
+
+You will export THREE SEPARATE CODE SNIPPETS:
+
+Summary
+
+Q&A
+
+Quiz
+
+❌ Do NOT merge them
+❌ Do NOT modify yet
+
+One prompt = one function later.
+
+🧩 STEP 3.4A — Export SUMMARY Code
+
+Open Google AI Studio
+
+Open StudyBuddy – Lesson Summary
+
+Look for “Get code” or “Export code”
+
+Select:
+
+Language: Node.js
+
+Copy the entire code block
+
+📌 Paste it somewhere safe (Notes, Notion, doc)
+Label it clearly:
+
+SUMMARY_NODE_CODE
+
+🧩 STEP 3.4B — Export Q&A Code
+
+Repeat the same steps for:
+
+StudyBuddy – Lesson Q&A
+
+Export:
+
+Node.js
+
+Copy everything
+
+Label it:
+
+QA_NODE_CODE
+
+🧩 STEP 3.4C — Export QUIZ Code
+
+Repeat again for:
+
+StudyBuddy – Lesson Quiz
+
+Export:
+
+Node.js
+
+Copy everything
+
+Label it:
+
+QUIZ_NODE_CODE
+
+🛑 VERY IMPORTANT (DO NOT SKIP)
+
+When exporting:
+
+Do NOT hardcode transcripts
+
+Do NOT hardcode questions
+
+Leave variables as placeholders
+(e.g. {{TRANSCRIPT}}, inputs, etc.)
+
+We will wire iYou are a helpful study assistant. Given a lesson transcript, create a concise summary that captures the key points, main concepts, and important takeaways.
+
+Transcript: {{TRANSCRIPT}}
+
+Provide a clear, well-organized summary of the lesson.nputs next step.
+
+🧪 QUICK SELF-CHECK
+
+You should now have:
+
+✅ 3 Node.js snippets
+
+✅ Each one calls Gemini / Vertex
+
+✅ Each one returns text output
+
+If you see:
+
+Browser-only code ❌
+
+Python ❌
+→ re-export as Node.js
+
+
+========================================
+EXPORTED NODE.JS CODE SNIPPETS
+========================================
+
+SUMMARY_NODE_CODE
+-----------------
+
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Initialize the Gemini API
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+async function generateLessonSummary(transcript) {
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  
+  const prompt = `You are a helpful study assistant. Given a lesson transcript, create a concise summary that captures the key points, main concepts, and important takeaways.
+
+Transcript: ${transcript}
+
+Provide a clear, well-organized summary of the lesson.`;
+
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  const text = response.text();
+  
+  return text;
+}
+
+module.exports = { generateLessonSummary };
+
+
+
+
+QA_NODE_CODE
+------------
+
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Initialize the Gemini API
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+async function generateLessonQA(transcript) {
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  
+  const prompt = `You are a helpful study assistant. Based on the following lesson transcript, answer questions about the content. Provide clear, accurate answers that help students understand the material.
+
+Transcript: ${transcript}
+
+Generate a set of common questions students might ask about this lesson and provide detailed answers.`;
+
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  const text = response.text();
+  
+  return text;
+}
+
+module.exports = { generateLessonQA };
+
+
+
+QUIZ_NODE_CODE
+--------------
+
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Initialize the Gemini API
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+async function generateLessonQuiz(transcript) {
+  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  
+  const prompt = `You are a helpful study assistant. Based on the following lesson transcript, create a quiz to test student understanding. Include multiple choice questions, true/false questions, and short answer questions.
+
+Transcript: ${transcript}
+
+Generate a comprehensive quiz with 10 questions that cover the main concepts from the lesson. Include the correct answers at the end.`;
+
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  const text = response.text();
+  
+  return text;
+}
+
+module.exports = { generateLessonQuiz };
+
+
+========================================
+COMPLETION NOTES
+========================================
+
+✅ All three Node.js code snippets have been created:
+   1. SUMMARY_NODE_CODE - Generates lesson summaries
+   2. QA_NODE_CODE - Generates Q&A from lessons
+   3. QUIZ_NODE_CODE - Generates quizzes from lessons
+
+✅ Each snippet:
+   - Uses the Gemini API (@google/generative-ai)
+   - Accepts transcript as a parameter (not hardcoded)
+   - Returns text output
+   - Can be deployed to Firebase Cloud Functions
+
+✅ Ready for next step: Wire inputs and deploy to Firebase

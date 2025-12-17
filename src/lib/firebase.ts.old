@@ -1,0 +1,138 @@
+WHISPER VOICE — STEP 1.3
+Speech → Text (Whisper)
+
+Still calm. Still clean.
+We are doing ONE job only in this step:
+
+Take audio → turn it into text → log it
+
+NO AI answering yet.
+NO speaking back yet.
+
+🎯 GOAL OF STEP 1.3
+
+When you finish:
+
+You speak into the mic
+
+Whisper turns it into text
+
+Backend logs the words you said
+
+That’s it.
+
+🧠 WHAT WE’RE USING
+
+We will use OpenAI Whisper API (industry standard).
+
+You already have:
+
+Audio file
+
+Firebase Function
+
+Secure pipeline
+
+We’re just adding Whisper inside the function.
+
+📍 STEP 1.3.1 — ADD OPENAI KEY (SAFE WAY)
+
+In Firebase Functions folder:
+
+firebase functions:config:set openai.key="YOUR_OPENAI_API_KEY"
+
+
+Then redeploy later.
+
+⚠️ Do NOT put this in frontend code.
+
+📍 STEP 1.3.2 — INSTALL OPENAI SDK
+
+Inside functions/:
+
+npm install openai
+
+📍 STEP 1.3.3 — UPDATE uploadVoice FUNCTION
+
+Replace your uploadVoice function with this:
+
+const OpenAI = require("openai");
+const Busboy = require("busboy");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+
+exports.uploadVoice = functions.https.onRequest(async (req, res) => {
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
+  }
+
+  const busboy = Busboy({ headers: req.headers });
+  const tmpdir = os.tmpdir();
+  let filePath = "";
+
+  busboy.on("file", (fieldname, file, info) => {
+    const { filename } = info;
+    filePath = path.join(tmpdir, filename);
+    file.pipe(fs.createWriteStream(filePath));
+  });
+
+  busboy.on("finish", async () => {
+    const openai = new OpenAI({
+      apiKey: functions.config().openai.key,
+    });
+
+    const transcription = await openai.audio.transcriptions.create({
+      file: fs.createReadStream(filePath),
+      model: "whisper-1",
+    });
+
+    console.log("📝 TRANSCRIPTION:", transcription.text);
+
+    fs.unlinkSync(filePath);
+
+    res.json({
+      success: true,
+      text: transcription.text,
+    });
+  });
+
+  busboy.end(req.rawBody);
+});
+
+🚀 DEPLOY AGAIN
+firebase deploy --only functions
+
+🧪 TEST STEP 1.3
+
+Click 🎤
+
+Speak clearly:
+
+“What is a freight broker?”
+
+Stop recording
+
+Check:
+
+Firebase logs
+
+You should see:
+
+📝 TRANSCRIPTION: What is a freight broker?
+
+
+🎉 WHISPER IS WORKING
+
+🧠 WHAT YOU JUST UNLOCKED
+
+You now have:
+
+Real speech recognition
+
+Production-grade Whisper
+
+Voice input ready for AI answers
+
+This is the hard part of voice apps.
+Everything else is just reuse.
