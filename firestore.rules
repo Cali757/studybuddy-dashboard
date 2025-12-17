@@ -2,23 +2,58 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    match /users/{userId} {
-      allow read, write: if request.auth != null
-        && request.auth.uid == userId;
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null 
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Users collection - users can read/write their own data, admins can read all
+    match /users/{userId} {
+      allow read: if request.auth != null 
+        && (request.auth.uid == userId || isAdmin());
+      allow write: if request.auth != null 
+        && request.auth.uid == userId;
+      // Allow admins to update user roles
+      allow update: if isAdmin() 
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role']);
+    }
+
+    // Notes collection - users can only access their own notes
     match /notes/{noteId} {
       allow read, write: if request.auth != null
         && request.auth.uid == resource.data.uid;
     }
 
+    // Quizzes collection - users can only access their own quizzes
     match /quizzes/{quizId} {
       allow read, write: if request.auth != null
         && request.auth.uid == resource.data.uid;
     }
 
+    // Lessons collection - authenticated users can read, backend only for write
     match /lessons/{lessonId} {
       allow read: if request.auth != null;
+      allow write: if false; // backend only
+      // Allow admins to delete or update status
+      allow delete, update: if isAdmin();
+    }
+
+    // System config - admins only
+    match /system/{document} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // AI usage logs - admins can read, backend can write
+    match /ai_usage/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // backend only
+    }
+
+    // Error logs - admins can read, backend can write
+    match /errors/{errorId} {
+      allow read: if isAdmin();
       allow write: if false; // backend only
     }
   }
