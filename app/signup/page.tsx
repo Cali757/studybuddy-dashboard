@@ -4,6 +4,8 @@ import { useState } from "react";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { app } from "@/lib/firebase";
 
+export const dynamic = 'force-dynamic';
+
 export default function SignupPage() {
   console.log("Signup page rendered"); // 🔍 DEBUG
 
