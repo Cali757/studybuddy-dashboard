@@ -12,6 +12,8 @@ import LessonsPanel from './components/LessonsPanel';
 import LogsPanel from './components/LogsPanel';
 import ControlPanel from './components/ControlPanel';
 
+export const dynamic = 'force-dynamic';
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
