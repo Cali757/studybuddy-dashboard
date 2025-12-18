@@ -23,10 +23,6 @@ export default function SignupPage() {
       );
       console.log("USER CREATED:", user.user.email);
       alert("Account created successfully!");
-      // Redirect after alert
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 100);
     } catch (err: any) {
       console.error("SIGNUP ERROR:", err);
       alert(err.message);
