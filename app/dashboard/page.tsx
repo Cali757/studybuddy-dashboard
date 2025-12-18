@@ -9,6 +9,9 @@ import FirstWinCTA from './components/FirstWinCTA';
 import EmptyState from './components/EmptyState';
 import ProgressIndicator from './components/ProgressIndicator';
 import WhatsNextSuggestion from './components/WhatsNextSuggestion';
+// import { trackUsage } from '@/lib/trackUsage';
+
+export const dynamic = 'force-dynamic';
 
 export default function DashboardPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -30,26 +33,35 @@ export default function DashboardPage() {
   const [totalQuizzes, setTotalQuizzes] = useState(0);
   const [averageScore, setAverageScore] = useState(0);
   
-  // Fake data for demonstration
-  const userName = "John Doe";
-  const studyStreak = 7;
+  // User data from Firebase
+  const [user, setUser] = useState<any>(null);
+  const [userData, setUserData] = useState<any>(null);
+  const studyStreak = userData?.streak || 0;
   const questionsAsked = 42;
   const hoursStudied = 15;
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUserId(user.uid);
+    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+      if (authUser) {
+        setUser(authUser);
+        setUserId(authUser.uid);
         // Check if user has completed onboarding
         try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          const userDoc = await getDoc(doc(db, 'users', authUser.uid));
           if (userDoc.exists()) {
-            const userData = userDoc.data();
+            const data = userDoc.data();
+            setUserData(data);
             // Show onboarding if hasOnboarded is false or undefined
-            if (!userData.hasOnboarded) {
+            if (!data.hasOnboarded) {
               setShowOnboarding(true);
               setIsNewUser(true);
             }
+            
+            // Update streak tracking
+            await updateStreakTracking(authUser.uid, data);
+            
+            // Track dashboard visit
+            await trackUsage(authUser.uid, 'dashboard_visit', {});
           } else {
             // User document doesn't exist yet, treat as new user
             setIsNewUser(true);
@@ -63,6 +75,50 @@ export default function DashboardPage() {
 
     return () => unsubscribe();
   }, []);
+
+  // Function to update streak tracking
+  const updateStreakTracking = async (uid: string, userData: any) => {
+    try {
+      const now = new Date();
+      const lastActive = userData.lastActiveAt ? new Date(userData.lastActiveAt) : null;
+      
+      let newStreak = userData.streak || 0;
+      
+      if (lastActive) {
+        // Calculate days difference
+        const daysDiff = Math.floor((now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff === 0) {
+          // Same day, no change to streak
+          return;
+        } else if (daysDiff === 1) {
+          // Consecutive day, increment streak
+          newStreak += 1;
+        } else {
+          // Streak broken, reset to 1
+          newStreak = 1;
+        }
+      } else {
+        // First time tracking, start streak at 1
+        newStreak = 1;
+      }
+      
+      // Update user document with new streak and lastActiveAt
+      await updateDoc(doc(db, 'users', uid), {
+        streak: newStreak,
+        lastActiveAt: now.toISOString()
+      });
+      
+      // Update local state
+      setUserData((prev: any) => ({
+        ...prev,
+        streak: newStreak,
+        lastActiveAt: now.toISOString()
+      }));
+    } catch (error) {
+      console.error('Error updating streak:', error);
+    }
+  };
 
   const handleOnboardingComplete = async () => {
     if (userId) {
@@ -218,15 +274,20 @@ export default function DashboardPage() {
           <a href="#lessons" style={{ color: '#718096', textDecoration: 'none' }}>Lessons</a>
           <a href="#notes" style={{ color: '#718096', textDecoration: 'none' }}>Notes</a>
           <a href="#quizzes" style={{ color: '#718096', textDecoration: 'none' }}>Quizzes</a>
-          <button style={{
-            backgroundColor: '#667eea',
-            color: 'white',
-            padding: '8px 20px',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: '600'
-          }}>
+          <button 
+            onClick={() => {
+              auth.signOut();
+              window.location.href = '/';
+            }}
+            style={{
+              backgroundColor: '#667eea',
+              color: 'white',
+              padding: '8px 20px',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}>
             Logout
           </button>
         </div>
@@ -244,9 +305,9 @@ export default function DashboardPage() {
 
         {/* Welcome Section */}
         <div style={{ marginBottom: '40px' }}>
-          <h2 style={{ fontSize: '32px', color: '#2d3748', marginBottom: '10px' }}>
-            Welcome back, {userName}! 👋
-          </h2>
+          <h1 className="text-xl font-semibold">
+            Welcome back{user?.displayName ? `, ${user.displayName}` : ""} 👋
+          </h1>
           <p style={{ color: '#718096', fontSize: '18px' }}>
             Ready to continue your learning journey?
           </p>
@@ -263,6 +324,88 @@ export default function DashboardPage() {
 
         {/* What's Next Suggestions */}
         <WhatsNextSuggestion suggestions={getSuggestions()} />
+
+        {/* Continue Studying Section */}
+        <div style={{
+          backgroundColor: 'white',
+          padding: '30px',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          marginBottom: '40px'
+        }}>
+          <h3 style={{ fontSize: '24px', color: '#2d3748', marginBottom: '20px' }}>
+            Continue Studying
+          </h3>
+          {userData?.lastLessonId ? (
+            <div>
+              <p style={{ color: '#718096', marginBottom: '20px' }}>
+                Pick up where you left off with your recent lessons and activities.
+              </p>
+              <a 
+                href={`/lesson/${userData.lastLessonId}`}
+                style={{
+                  display: 'inline-block',
+                  backgroundColor: '#667eea',
+                  color: 'white',
+                  padding: '12px 24px',
+                  borderRadius: '6px',
+                  textDecoration: 'none',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                Continue where you left off →
+              </a>
+            </div>
+          ) : (
+            <p style={{ color: '#718096' }}>
+              Pick up where you left off with your recent lessons and activities.
+            </p>
+          )}
+        </div>
+
+        {/* Recent Lessons Section */}
+        {userData?.recentLessons && userData.recentLessons.length > 0 && (
+          <div style={{
+            backgroundColor: 'white',
+            padding: '30px',
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            marginBottom: '40px'
+          }}>
+            <h3 style={{ fontSize: '24px', color: '#2d3748', marginBottom: '20px' }}>
+              Recently Viewed Lessons
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {userData.recentLessons.map((lessonId: string, index: number) => (
+                <a
+                  key={lessonId}
+                  href={`/lesson/${lessonId}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '16px',
+                    backgroundColor: '#f7fafc',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    color: '#2d3748',
+                    transition: 'background-color 0.2s',
+                    border: '1px solid #e2e8f0'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#edf2f7'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#f7fafc'}
+                >
+                  <span style={{ fontSize: '24px', marginRight: '16px' }}>📚</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '600', marginBottom: '4px' }}>Lesson {lessonId}</div>
+                    <div style={{ fontSize: '14px', color: '#718096' }}>Click to continue</div>
+                  </div>
+                  <span style={{ color: '#667eea', fontWeight: '600' }}>→</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* Stats Cards */}
         <div style={{
@@ -315,7 +458,7 @@ export default function DashboardPage() {
           scrollMarginTop: '80px'
         }}>
           <h3 style={{ fontSize: '24px', color: '#2d3748', marginBottom: '20px' }}>
-            My Lessons
+            Your Lessons
           </h3>
           {!hasLessons ? (
             <EmptyState
@@ -410,28 +553,41 @@ export default function DashboardPage() {
                 fontSize: '16px'
               }}
             />
-            <button style={{
-              backgroundColor: '#667eea',
-              color: 'white',
-              padding: '14px 30px',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap'
-            }}>
+            <button 
+              onClick={() => {
+                const input = questionInputRef.current;
+                if (input && input.value.trim()) {
+                  alert(`AI is processing your question: "${input.value}"\n\nThis feature is coming soon!`);
+                } else {
+                  alert('Please enter a question first!');
+                }
+              }}
+              style={{
+                backgroundColor: '#667eea',
+                color: 'white',
+                padding: '14px 30px',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}>
               Ask AI
             </button>
-            <button style={{
-              backgroundColor: '#48bb78',
-              color: 'white',
-              padding: '14px 20px',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '20px',
-              cursor: 'pointer'
-            }}>
+            <button 
+              onClick={() => {
+                alert('🎤 Voice input feature coming soon! For now, please type your question.');
+              }}
+              style={{
+                backgroundColor: '#48bb78',
+                color: 'white',
+                padding: '14px 20px',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '20px',
+                cursor: 'pointer'
+              }}>
               🎤
             </button>
           </div>
@@ -445,7 +601,7 @@ export default function DashboardPage() {
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
         }}>
           <h3 style={{ fontSize: '24px', color: '#2d3748', marginBottom: '20px' }}>
-            Recent Questions
+            Recent Activity
           </h3>
           {recentQuestions.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -498,10 +654,9 @@ export default function DashboardPage() {
             © 2025 StudyBuddy. Your AI-powered learning companion.
           </div>
           <div style={{ display: 'flex', gap: '20px' }}>
-            <a href="#lessons" style={{ color: '#667eea', textDecoration: 'none', fontSize: '14px' }}>Lessons</a>
-            <a href="#notes" style={{ color: '#667eea', textDecoration: 'none', fontSize: '14px' }}>Notes</a>
-            <a href="#quizzes" style={{ color: '#667eea', textDecoration: 'none', fontSize: '14px' }}>Quizzes</a>
-            <a href="/dashboard" style={{ color: '#667eea', textDecoration: 'none', fontSize: '14px' }}>Dashboard</a>
+            <a href="/changelog" style={{ color: '#667eea', textDecoration: 'none', fontSize: '14px' }}>Changelog</a>
+            <a href="/privacy" style={{ color: '#667eea', textDecoration: 'none', fontSize: '14px' }}>Privacy</a>
+            <a href="/terms" style={{ color: '#667eea', textDecoration: 'none', fontSize: '14px' }}>Terms</a>
           </div>
         </div>
       </footer>
