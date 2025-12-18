@@ -25,3 +25,8 @@ export const signInWithEmail = (
   signInWithEmailAndPassword(auth, email, password);
 
 export const logout = () => signOut(auth);
+
+export const isAdmin = async (user: any) => {
+  // Placeholder admin check - always returns false for now
+  return false;
+};
