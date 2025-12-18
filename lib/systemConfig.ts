@@ -5,6 +5,8 @@ interface SystemConfig {
   aiEnabled: boolean;
   billingEnabled: boolean;
   ingestEnabled: boolean;
+  aiTone?: 'friendly' | 'strict' | 'concise';
+  explainWrongAnswers?: boolean;
 }
 
 let cachedConfig: SystemConfig | null = null;
@@ -32,7 +34,9 @@ export async function getSystemConfig(): Promise<SystemConfig> {
       cachedConfig = {
         aiEnabled: data.aiEnabled ?? true,
         billingEnabled: data.billingEnabled ?? true,
-        ingestEnabled: data.ingestEnabled ?? true
+        ingestEnabled: data.ingestEnabled ?? true,
+        aiTone: data.aiTone ?? 'friendly',
+        explainWrongAnswers: data.explainWrongAnswers ?? true
       };
       lastFetch = now;
       return cachedConfig;
@@ -42,7 +46,9 @@ export async function getSystemConfig(): Promise<SystemConfig> {
     return {
       aiEnabled: true,
       billingEnabled: true,
-      ingestEnabled: true
+      ingestEnabled: true,
+      aiTone: 'friendly',
+      explainWrongAnswers: true
     };
   } catch (error) {
     console.error('Error fetching system config:', error);
@@ -50,7 +56,9 @@ export async function getSystemConfig(): Promise<SystemConfig> {
     return {
       aiEnabled: true,
       billingEnabled: true,
-      ingestEnabled: true
+      ingestEnabled: true,
+      aiTone: 'friendly',
+      explainWrongAnswers: true
     };
   }
 }
@@ -77,6 +85,22 @@ export async function isBillingEnabled(): Promise<boolean> {
 export async function isIngestEnabled(): Promise<boolean> {
   const config = await getSystemConfig();
   return config.ingestEnabled;
+}
+
+/**
+ * Gets the AI tone setting
+ */
+export async function getAITone(): Promise<'friendly' | 'strict' | 'concise'> {
+  const config = await getSystemConfig();
+  return config.aiTone ?? 'friendly';
+}
+
+/**
+ * Checks if AI should explain wrong answers
+ */
+export async function shouldExplainWrongAnswers(): Promise<boolean> {
+  const config = await getSystemConfig();
+  return config.explainWrongAnswers ?? true;
 }
 
 /**

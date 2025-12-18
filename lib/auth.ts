@@ -8,6 +8,17 @@ export interface UserRole {
   createdAt?: any;
   lastActive?: any;
   hasOnboarded?: boolean;
+  subscriptionTier?: 'starter' | 'pro' | 'team';
+  subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'trialing';
+  aiUsageThisMonth?: number;
+  referralCode?: string;
+  referredBy?: string;
+  referralStats?: {
+    totalReferrals: number;
+    successfulReferrals: number;
+    pendingRewards: number;
+    totalRewardsEarned: number;
+  };
 }
 
 /**
