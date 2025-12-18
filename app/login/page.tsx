@@ -1,4 +1,30 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { app } from "@/lib/firebase";
+
 export default function LoginPage() {
+  const router = useRouter();
+  const auth = getAuth(app);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    console.log("LOGIN CLICKED");
+
+    try {
+      const user = await signInWithEmailAndPassword(auth, email, password);
+      console.log("USER LOGGED IN:", user.user.email);
+      alert("Login successful!");
+      router.push("/dashboard");
+    } catch (err: any) {
+      console.error("LOGIN ERROR:", err);
+      alert(err.message);
+    }
+  }
   return (
     <div style={{ 
       minHeight: '100vh',
@@ -32,7 +58,7 @@ export default function LoginPage() {
           Login to your StudyBuddy account
         </p>
         
-        <form style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div>
             <label style={{ 
               display: 'block', 
@@ -45,6 +71,9 @@ export default function LoginPage() {
             <input
               type="email"
               placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
               style={{
                 width: '100%',
                 padding: '12px',
@@ -68,6 +97,9 @@ export default function LoginPage() {
             <input
               type="password"
               placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
               style={{
                 width: '100%',
                 padding: '12px',
@@ -80,7 +112,7 @@ export default function LoginPage() {
           </div>
           
           <button
-            type="button"
+            type="submit"
             style={{
               backgroundColor: '#667eea',
               color: 'white',
