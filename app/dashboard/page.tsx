@@ -61,7 +61,7 @@ export default function DashboardPage() {
             await updateStreakTracking(authUser.uid, data);
             
             // Track dashboard visit
-            await trackUsage(authUser.uid, 'dashboard_visit', {});
+            // await trackUsage(authUser.uid, 'dashboard_visit', {});
           } else {
             // User document doesn't exist yet, treat as new user
             setIsNewUser(true);
