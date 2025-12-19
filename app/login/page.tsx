@@ -19,7 +19,7 @@ export default function LoginPage() {
       const user = await signInWithEmailAndPassword(auth, email, password);
       console.log("USER LOGGED IN:", user.user.email);
       alert("Login successful!");
-      router.push("/dashboard");
+      router.push("☑ YOU ARE OFF/(ERROR: No Firebase project - CLI installed, login successful, but no project configured)ICIALLY HERE");
     } catch (err: any) {
       console.error("LOGIN ERROR:", err);
       alert(err.message);
