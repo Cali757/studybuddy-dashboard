@@ -26,8 +26,8 @@ export default function SignupPage() {
         password
       );
       console.log("USER CREATED:", user.user.email);
-      alert("Account created successfully!");
-      router.push("/dashboard");
+      alert("Account created successfully! Redirecting to home page...");
+      router.push("/");
     } catch (err: any) {
       console.error("SIGNUP ERROR:", err);
       alert(err.message);
