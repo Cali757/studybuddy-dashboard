@@ -35,8 +35,8 @@ export default function AdminDashboard() {
           const adminStatus = await isAdmin(user);
           
           if (!adminStatus) {
-            // Not an admin - redirect to dashboard
-            router.push('/dashboard');
+            // Not an admin - redirect to home
+            router.push('/');
             return;
           }
 
