@@ -6,8 +6,10 @@ import { auth, db } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { trackUsage } from '@/lib/trackUsage';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 
 export default function QuizPage() {
+  const { loading: authLoading } = useRequireAuth();
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);

@@ -6,8 +6,10 @@ import { auth, db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { trackUsage } from '@/lib/trackUsage';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 
 export default function LessonPage() {
+  const { loading: authLoading } = useRequireAuth();
   const params = useParams();
   const router = useRouter();
   const lessonId = params.id as string;

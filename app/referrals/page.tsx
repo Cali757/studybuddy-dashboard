@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { auth } from '@/lib/firebase';
 import { getUserReferralCode, getReferralStats, getReferralHistory } from '@/lib/referrals';
 import { getPendingRewards, claimAllRewards } from '@/lib/referralRewards';
+import { useRequireAuth } from '@/lib/useRequireAuth';
 
 export default function ReferralsPage() {
+  const { loading: authLoading } = useRequireAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
