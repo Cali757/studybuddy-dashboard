@@ -31,12 +31,11 @@ service cloud.firestore {
         && request.auth.uid == resource.data.uid;
     }
 
-    // Lessons collection - authenticated users can read, backend only for write
+    // Lessons collection - authenticated users can read, admins can write
     match /lessons/{lessonId} {
       allow read: if request.auth != null;
-      allow write: if false; // backend only
-      // Allow admins to delete or update status
-      allow delete, update: if isAdmin();
+      allow create: if request.auth != null && isAdmin(); // Allow admins to create lessons
+      allow update, delete: if isAdmin();
     }
 
     // System config - admins only

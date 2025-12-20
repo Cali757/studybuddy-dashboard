@@ -1,38 +1,61 @@
 "use client";
-import { useRequireAuth } from "@/lib/useRequireAuth";
-import { getAuth } from "firebase/auth";
-import app from "@/lib/firebase";
+
+import { auth, db } from "@/lib/firebase";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
-  const loading = useRequireAuth();
-  const auth = getAuth(app);
-  const user = auth.currentUser;
+  const router = useRouter();
+  const [userData, setUserData] = useState<any>(null);
+  const [lessons, setLessons] = useState<any[]>([]);
 
-  if (loading) return <div style={{ padding: 40 }}><p>Loading dashboard...</p></div>;
+  useEffect(() => {
+    const load = async () => {
+      const user = auth.currentUser;
+      if (!user) return router.push("/login");
+
+      const userSnap = await getDoc(doc(db, "users", user.uid));
+      setUserData(userSnap.data());
+
+      const lessonsSnap = await getDocs(collection(db, "lessons"));
+      setLessons(lessonsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    };
+
+    load();
+  }, []);
+
+  if (!userData) return <p>Loading...</p>;
 
   return (
-    <div style={{ padding: 40 }} className="space-y-6">
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Welcome back{user?.email ? `, ${user.email}` : ''}!</h1>
-      
-      <section style={{ padding: '20px', border: '1px solid #ddd', borderRadius: '8px', marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '18px', marginBottom: '10px' }}>📘 Continue Learning</h2>
-        <p>Your recent courses will appear here.</p>
-      </section>
+    <main className="p-6 space-y-4">
+      <h1 className="text-2xl font-bold">Dashboard</h1>
 
-      <section style={{ padding: '20px', border: '1px solid #ddd', borderRadius: '8px', marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '18px', marginBottom: '10px' }}>🤖 Ask StudyBuddy</h2>
-        <p>Get AI-powered help with your studies.</p>
-      </section>
+      <button
+        onClick={() => {
+          if (lessons.length === 0) {
+            alert("No lessons yet. Import lessons first.");
+          } else {
+            router.push(`/lesson/${lessons[0].id}`);
+          }
+        }}
+        className="btn-primary"
+      >
+        Start Learning
+      </button>
 
-      <section style={{ padding: '20px', border: '1px solid #ddd', borderRadius: '8px', marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '18px', marginBottom: '10px' }}>🧪 Resume Quiz</h2>
-        <p>Continue where you left off.</p>
-      </section>
-
-      <section style={{ padding: '20px', border: '1px solid #ddd', borderRadius: '8px' }}>
-        <h2 style={{ fontSize: '18px', marginBottom: '10px' }}>📈 Your Progress</h2>
-        <p>Track your learning journey.</p>
-      </section>
-    </div>
+      <ul className="space-y-2">
+        {lessons.map(lesson => (
+          <li key={lesson.id}>
+            <button
+              className="underline"
+              onClick={() => router.push(`/lesson/${lesson.id}`)}
+            >
+              {lesson.title}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </main>
   );
 }

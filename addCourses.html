@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Courses to Firestore</title>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC9ehOBPijdpD66r-dmcrcovv89f-Ebkc4",
+            authDomain: "mywebapp-99a71.firebaseapp.com",
+            projectId: "mywebapp-99a71",
+            storageBucket: "mywebapp-99a71.firebasestorage.app",
+            messagingSenderId: "802097394794",
+            appId: "1:802097394794:web:f59f62224caff164644613"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const courses = [
+            {
+                title: 'Boss Dispatching 2025 subs',
+                driveLink: 'https://drive.google.com/drive/folders/1Hhy7W81XJCrwam6suUhk8ArRVkf-xQXs'
+            },
+            {
+                title: 'Boss dispatching Shortcut 2025-subs',
+                driveLink: 'https://drive.google.com/drive/folders/1Nlbnm01kXaDl_42874lJ4Qgavd8Tpl7Z'
+            },
+            {
+                title: 'Boss Trucking Academy-subs',
+                driveLink: 'https://drive.google.com/drive/folders/17hej598RpwYBJUNS0KDeqnLZW3ugLafr'
+            },
+            {
+                title: 'Freight Broker Course (Monthly Installment)',
+                driveLink: 'https://drive.google.com/drive/folders/12Buq7N3gNPkKN52_yPj_Z83Q874dqQPs'
+            },
+            {
+                title: 'Mastering Freight Brokering and Dispatching',
+                driveLink: 'https://drive.google.com/drive/folders/11eftPQ1NCeSO7sa1Owu9Tf_69l2Vmqdn'
+            },
+            {
+                title: 'Trucking Academy Short cut 2025',
+                driveLink: 'https://drive.google.com/drive/folders/1k-XtVldoa7ZU1NQ8jTPe9qqwITZi76zS'
+            }
+        ];
+
+        async function addCourses() {
+            const output = document.getElementById('output');
+            output.innerHTML = 'Starting to add courses...<br>';
+
+            for (const course of courses) {
+                try {
+                    const docRef = await addDoc(collection(db, 'lessons'), {
+                        title: course.title,
+                        driveLink: course.driveLink
+                    });
+                    output.innerHTML += `✓ Added: ${course.title} (ID: ${docRef.id})<br>`;
+                } catch (error) {
+                    output.innerHTML += `✗ Error adding ${course.title}: ${error.message}<br>`;
+                }
+            }
+
+            output.innerHTML += '<br><strong>Done!</strong>';
+        }
+
+        window.addEventListener('load', () => {
+            document.getElementById('addButton').addEventListener('click', addCourses);
+        });
+    </script>
+</head>
+<body>
+    <h1>Add Courses to Firestore</h1>
+    <button id="addButton">Add All 6 Courses</button>
+    <div id="output" style="margin-top: 20px; font-family: monospace;"></div>
+</body>
+</html>

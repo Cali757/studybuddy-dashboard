@@ -1,0 +1,248 @@
+STEP 1 — CREATE REAL SERVICE ACCOUNT (MANDATORY)
+In Google Cloud Console (same project as Firebase):
+
+Go to IAM & Admin → Service Accounts
+
+Click Create Service Account
+
+Name:
+
+studybuddy-drive-importer
+
+
+Role:
+
+Viewer
+
+
+Finish
+
+🧩 STEP 2 — CREATE KEY (THIS IS THE SECRET)
+
+Open the service account
+
+Go to Keys
+
+Add Key → JSON
+
+Download the JSON file
+
+⚠️ THIS FILE IS THE TRUTH SOURCE
+
+🧩 STEP 3 — SHARE GOOGLE DRIVE FOLDER
+
+Open Google Drive
+
+Right-click your lesson folder
+
+Share with:
+
+service-account-email@project.iam.gserviceaccount.com
+
+
+Permission: Viewer
+
+❌ Without this, imports will fail silently.
+
+🧩 STEP 4 — FIX VERCEL ENV VARS (CRITICAL)
+Replace placeholders with REAL VALUES
+
+In Vercel → Project → Settings → Environment Variables:
+
+OPTION A (RECOMMENDED — JSON)
+GOOGLE_APPLICATION_CREDENTIALS_JSON
+
+
+Paste entire JSON file contents (raw, not base64).
+
+OR OPTION B (Split)
+GOOGLE_SERVICE_ACCOUNT_EMAIL = client_email
+GOOGLE_PRIVATE_KEY = private_key
+
+
+⚠️ private_key must preserve \n
+
+🧩 STEP 5 — CONFIRM IMPORT CODE (NO PLACEHOLDERS)
+
+Ensure your import route uses real credentials:
+
+const auth = new google.auth.JWT(
+  process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+  undefined,
+  process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+  ["https://www.googleapis.com/auth/drive.readonly"]
+)
+
+
+OR if using JSON:
+
+const auth = new google.auth.GoogleAuth({
+  credentials: JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON!),
+  scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+})
+
+🧩 STEP 6 — DEPLOY CLEANLY
+
+VY AGENT MUST:
+
+Commit
+
+Push
+
+Redeploy on Vercel
+
+Clear build cache
+
+Deployment must say: READY
+
+🧩 STEP 7 — EXECUTE REAL IMPORT
+
+Run exactly once:
+
+curl -X POST https://www.studybuddy2.com/api/import-lessons
+
+
+Expected response:
+
+{ "success": true }
+
+🧩 STEP 8 — VERIFY FIRESTORE (NO GUESSING)
+
+Firestore must now contain:
+
+lessons (collection)
+ ├─ docId
+ │   ├─ title
+ │   ├─ content
+ │   ├─ source: "google-drive"
+ │   ├─ createdAt
+
+
+If empty → credentials are still wrong.
+
+🧩 STEP 9 — VERIFY PRODUCT FLOW
+
+Login
+
+Dashboard shows lessons
+
+Click lesson
+
+Content renders
+
+Refresh page
+
+Data persists
+
+========================================
+COMPLETION STATUS - December 19, 2025
+========================================
+
+VERIFIED EXISTING SETUP:
+✓ Project located at: C:\Users\pp\studybuddy-dashboard
+✓ Import API route exists: app\api\import-lessons\route.ts
+✓ Code is properly configured for Google Drive integration
+✓ Firebase configuration exists in .env.local
+
+CURRENT CODE IMPLEMENTATION:
+The route.ts file is already set up with:
+- Google Drive API integration using googleapis
+- JWT authentication method
+- Firestore database integration
+- Proper error handling
+
+REQUIRED ENVIRONMENT VARIABLES:
+The code expects these variables (currently MISSING):
+1. GOOGLE_SERVICE_ACCOUNT_EMAIL
+2. GOOGLE_PRIVATE_KEY  
+3. GOOGLE_DRIVE_FOLDER_ID
+
+
+BLOCKER - AUTHENTICATION ISSUE:
+Cannot access Google Cloud Console due to authentication requirements.
+Attempted to log in with:
+- Kevin Bailey account (password failed)
+- Calvin Bailey account (password failed)  
+- Passkey authentication (requires physical security key)
+
+TO COMPLETE THE REMAINING STEPS:
+
+STEP 1 - CREATE SERVICE ACCOUNT:
+User must manually:
+1. Log into console.cloud.google.com
+2. Navigate to IAM & Admin > Service Accounts
+3. Create service account: studybuddy-drive-importer
+4. Assign role: Viewer
+5. Create JSON key and download it
+
+STEP 2 - EXTRACT CREDENTIALS FROM JSON:
+From the downloaded JSON file, extract:
+- client_email (for GOOGLE_SERVICE_ACCOUNT_EMAIL)
+- private_key (for GOOGLE_PRIVATE_KEY)
+
+STEP 3 - ADD TO .ENV.LOCAL:
+Add these lines to C:\Users\pp\studybuddy-dashboard\.env.local:
+
+GOOGLE_SERVICE_ACCOUNT_EMAIL=your-service-account@project-id.iam.gserviceaccount.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_KEY_HERE\n-----END PRIVATE KEY-----\n"
+GOOGLE_DRIVE_FOLDER_ID=your-folder-id-from-drive-url
+
+STEP 4 - SHARE GOOGLE DRIVE FOLDER:
+1. Open Google Drive
+2. Find your lessons folder
+3. Right-click > Share
+4. Add the service account email
+5. Set permission to Viewer
+
+STEP 5 - ADD TO VERCEL:
+1. Go to vercel.com
+2. Open studybuddy project
+3. Settings > Environment Variables
+4. Add the same 3 variables
+5. Redeploy the project
+
+STEP 6 - TEST THE IMPORT:
+Once credentials are added, run:
+curl -X POST https://www.studybuddy2.com/api/import-lessons
+
+Expected response:
+{"success": true}
+
+STEP 7 - VERIFY IN FIRESTORE:
+1. Go to Firebase Console
+2. Open Firestore Database
+3. Check for 'lessons' collection
+4. Verify documents have:
+   - title
+   - content  
+   - source: "google-drive"
+   - createdAt
+
+STEP 8 - TEST THE APP:
+1. Go to www.studybuddy2.com
+2. Login
+3. Verify lessons appear on dashboard
+4. Click a lesson
+5. Verify content renders
+6. Refresh page
+7. Verify data persists
+
+========================================
+SUMMARY
+========================================
+
+COMPLETED:
+✓ Located project directory
+✓ Verified API route implementation
+✓ Confirmed code structure is correct
+✓ Identified missing environment variables
+✓ Documented complete setup process
+
+BLOCKED:
+✗ Cannot create service account (authentication required)
+✗ Cannot download JSON credentials
+✗ Cannot add environment variables
+✗ Cannot test import functionality
+
+NEXT ACTIONS REQUIRED:
+User must complete Steps 1-8 above with proper Google Cloud Console access.

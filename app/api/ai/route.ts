@@ -27,8 +27,8 @@ Always end responses with:
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const message = body.message || "";
-    const transcript = body.transcript || "";
+    const message = body.message || body.question || "";
+    const transcript = body.transcript || body.context || "";
 
     const prompt = `
 SYSTEM:
@@ -44,7 +44,7 @@ ${message}
     const result = await model.generateContent(prompt);
     const response = result.response.text();
 
-    return NextResponse.json({ response });
+    return NextResponse.json({ response, answer: response });
   } catch (err) {
     console.error("AI error:", err);
     return NextResponse.json(

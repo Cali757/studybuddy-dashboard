@@ -1,0 +1,411 @@
+// app/lesson/[id]/page.tsx
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
+export default async function Lesson({ params }: any) {
+  const snap = await getDoc(doc(db, "lessons", params.id));
+  const lesson = snap.data();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+      if (authUser) {
+        setUserId(authUser.uid);
+        
+        // Track that user viewed this lesson
+        try {
+          // Fetch current user data to get existing recentLessons
+          const userDoc = await getDoc(doc(db, "users", authUser.uid));
+          const currentRecentLessons = userDoc.exists() ? (userDoc.data().recentLessons || []) : [];
+          
+          // Add current lesson to the beginning, remove duplicates, keep max 5
+          const updatedRecentLessons = [
+            lessonId,
+            ...currentRecentLessons.filter((id: string) => id !== lessonId)
+          ].slice(0, 5);
+          
+          await updateDoc(doc(db, "users", authUser.uid), {
+            lastLessonId: lessonId,
+            recentLessons: updatedRecentLessons,
+          });
+          
+          // Track lesson view
+          await trackUsage(authUser.uid, 'lesson_view', { lessonId });
+        } catch (error) {
+          console.error('Error updating lastLessonId:', error);
+        }
+        
+        // Fetch lesson data
+        try {
+          const lessonDoc = await getDoc(doc(db, 'lessons', lessonId));
+          if (lessonDoc.exists()) {
+            const lessonData = { id: lessonDoc.id, ...lessonDoc.data() };
+            setLesson(lessonData);
+            
+            // Check if lesson has summary, if not generate it
+            if (lessonData.summary) {
+              setAiSummary(lessonData.summary);
+              setShowQuizButton(true);
+            } else if (lessonData.transcript || lessonData.content) {
+              // Auto-generate summary
+              generateSummary(lessonData.transcript || lessonData.content);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching lesson:', error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        router.push('/login');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [lessonId, router]);
+
+  const generateSummary = async (content: string) => {
+    setGeneratingSummary(true);
+    try {
+      const response = await fetch('/api/summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, lessonId })
+      });
+      const data = await response.json();
+      if (data.summary) {
+        setAiSummary(data.summary);
+        setShowQuizButton(true);
+      }
+    } catch (error) {
+      console.error('Error generating summary:', error);
+    } finally {
+      setGeneratingSummary(false);
+    }
+  };
+
+  const handleTakeQuiz = () => {
+    router.push(`/quiz/${lessonId}`);
+  };
+
+  const handleAskQuestion = async () => {
+    if (!chatQuestion.trim() || !lesson) return;
+    
+    setAskingQuestion(true);
+    try {
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: chatQuestion,
+          context: lesson.content || lesson.transcript || lesson.summary
+        })
+      });
+      const data = await response.json();
+      setChatResponse(data.answer || 'Sorry, I could not generate an answer.');
+    } catch (error) {
+      console.error('Error asking question:', error);
+      setChatResponse('Error generating response.');
+    } finally {
+      setAskingQuestion(false);
+    }
+  };
+
+  const handleVoiceInput = async () => {
+    if (!navigator.mediaDevices) {
+      alert('Voice input not supported in this browser');
+      return;
+    }
+
+    try {
+      setIsRecording(true);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const audioChunks: Blob[] = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const formData = new FormData();
+        formData.append('audio', audioBlob);
+
+        try {
+          const response = await fetch('/api/voice', {
+            method: 'POST',
+            body: formData
+          });
+          const data = await response.json();
+          setChatQuestion(data.text);
+        } catch (error) {
+          console.error('Error transcribing audio:', error);
+        }
+        
+        stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+      };
+
+      mediaRecorder.start();
+      setTimeout(() => mediaRecorder.stop(), 5000); // Record for 5 seconds
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      setIsRecording(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ 
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f7fafc'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '48px', marginBottom: '20px' }}>📚</div>
+          <p style={{ color: '#718096', fontSize: '18px' }}>Loading lesson...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!lesson) {
+    return (
+      <div style={{ 
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#f7fafc'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '48px', marginBottom: '20px' }}>❌</div>
+          <p style={{ color: '#718096', fontSize: '18px' }}>Lesson not found</p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            style={{
+              marginTop: '20px',
+              backgroundColor: '#667eea',
+              color: 'white',
+              padding: '12px 24px',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ 
+      minHeight: '100vh',
+      backgroundColor: '#f7fafc',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      {/* Header */}
+      <header style={{
+        backgroundColor: 'white',
+        padding: '20px 40px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <h1 
+          style={{ fontSize: '24px', color: '#667eea', margin: 0, cursor: 'pointer' }} 
+          onClick={() => router.push('/dashboard')}
+        >
+          StudyBuddy
+        </h1>
+        <button
+          onClick={() => router.push('/dashboard')}
+          style={{
+            backgroundColor: '#667eea',
+            color: 'white',
+            padding: '8px 20px',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: '600'
+          }}
+        >
+          Back to Dashboard
+        </button>
+      </header>
+
+      {/* Main Content */}
+      <main style={{ padding: '40px', maxWidth: '900px', margin: '0 auto' }}>
+        <div style={{
+          backgroundColor: 'white',
+          padding: '40px',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <h1 style={{ fontSize: '32px', color: '#2d3748', marginBottom: '20px' }}>
+            {lesson.title || 'Untitled Lesson'}
+          </h1>
+          
+          <div style={{ 
+            color: '#718096', 
+            marginBottom: '30px',
+            paddingBottom: '20px',
+            borderBottom: '1px solid #e2e8f0'
+          }}>
+            <p><strong>Source:</strong> {lesson.source || 'N/A'}</p>
+            <p><strong>Status:</strong> {lesson.status || 'N/A'}</p>
+          </div>
+
+          <div style={{ 
+            color: '#2d3748',
+            lineHeight: '1.8',
+            fontSize: '16px'
+          }}>
+            {lesson.content ? (
+              <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
+            ) : lesson.summary ? (
+              <p>{lesson.summary}</p>
+            ) : (
+              <p style={{ color: '#718096', fontStyle: 'italic' }}>
+                No content available for this lesson yet.
+              </p>
+            )}
+          </div>
+
+          {/* AI Summary Section */}
+          {(aiSummary || generatingSummary) && (
+            <div style={{
+              marginTop: '40px',
+              padding: '30px',
+              backgroundColor: '#f0f4ff',
+              borderRadius: '8px',
+              borderLeft: '4px solid #667eea'
+            }}>
+              <h2 style={{ fontSize: '24px', color: '#667eea', marginBottom: '15px' }}>
+                📝 AI Summary
+              </h2>
+              {generatingSummary ? (
+                <p style={{ color: '#718096', fontStyle: 'italic' }}>
+                  Generating summary...
+                </p>
+              ) : (
+                <div style={{ color: '#2d3748', lineHeight: '1.8' }}>
+                  {aiSummary}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Ask StudyBuddy Section */}
+          <div style={{
+            marginTop: '40px',
+            padding: '30px',
+            backgroundColor: '#fff9f0',
+            borderRadius: '8px',
+            borderLeft: '4px solid #f6ad55'
+          }}>
+            <h2 style={{ fontSize: '24px', color: '#f6ad55', marginBottom: '15px' }}>
+              💬 Ask StudyBuddy
+            </h2>
+            <p style={{ color: '#718096', marginBottom: '20px' }}>
+              Have questions about this lesson? Ask me anything!
+            </p>
+            
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+              <input
+                type="text"
+                value={chatQuestion}
+                onChange={(e) => setChatQuestion(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAskQuestion()}
+                placeholder="Type your question here..."
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '6px',
+                  fontSize: '16px'
+                }}
+              />
+              <button
+                onClick={handleVoiceInput}
+                disabled={isRecording}
+                style={{
+                  backgroundColor: isRecording ? '#f56565' : '#667eea',
+                  color: 'white',
+                  padding: '12px 20px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: isRecording ? 'default' : 'pointer',
+                  fontWeight: '600'
+                }}
+              >
+                {isRecording ? '🔴 Recording...' : '🎤'}
+              </button>
+              <button
+                onClick={handleAskQuestion}
+                disabled={askingQuestion || !chatQuestion.trim()}
+                style={{
+                  backgroundColor: '#48bb78',
+                  color: 'white',
+                  padding: '12px 24px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: askingQuestion || !chatQuestion.trim() ? 'default' : 'pointer',
+                  fontWeight: '600',
+                  opacity: askingQuestion || !chatQuestion.trim() ? 0.5 : 1
+                }}
+              >
+                {askingQuestion ? 'Thinking...' : 'Ask'}
+              </button>
+            </div>
+
+            {chatResponse && (
+              <div style={{
+                marginTop: '20px',
+                padding: '20px',
+                backgroundColor: 'white',
+                borderRadius: '6px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <p style={{ color: '#2d3748', margin: 0, lineHeight: '1.6' }}>
+                  {chatResponse}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Take Quiz Button */}
+          {showQuizButton && (
+            <div style={{ marginTop: '30px', textAlign: 'center' }}>
+              <button
+                onClick={handleTakeQuiz}
+                style={{
+                  backgroundColor: '#48bb78',
+                  color: 'white',
+                  padding: '16px 40px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  fontSize: '18px',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                  transition: 'all 0.2s'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#38a169'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#48bb78'}
+              >
+                🎯 Take Quiz
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
