@@ -14,7 +14,7 @@ const PRICING_TIERS = {
   starter: {
     name: 'Starter',
     price: 2000, // $20.00 in cents
-    priceId: 'price_starter', // Replace with actual Stripe price ID
+    priceId: 'price_1SgVx6CrvQO30f5t2L0b0em24', // StudyBuddy Starter
     features: {
       aiUsage: 'standard',
       voiceEnabled: false,
@@ -26,7 +26,7 @@ const PRICING_TIERS = {
   pro: {
     name: 'Pro',
     price: 3900, // $39.00 in cents
-    priceId: 'price_pro', // Replace with actual Stripe price ID
+    priceId: 'price_1SgVztCrvQO30f5t9FoGzwFy', // StudyBuddy Pro
     features: {
       aiUsage: 'higher',
       voiceEnabled: true,
@@ -38,7 +38,7 @@ const PRICING_TIERS = {
   team: {
     name: 'Team',
     price: 7900, // $79.00 in cents
-    priceId: 'price_team', // Replace with actual Stripe price ID
+    priceId: 'price_1SgW1JCrvQO30f5t0rL4Oq5e', // StudyBuddy Team
     features: {
       aiUsage: 'highest',
       voiceEnabled: true,
