@@ -2,14 +2,14 @@ import { getApps, initializeApp, cert } from "firebase-admin/app"
 import { getFirestore } from "firebase-admin/firestore"
 
 const serviceAccount = JSON.parse(
-  process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON!
+  process.env.GOOGLE_APPLICATION_CREDENTIALS!
 )
 
-const app =
+const app = 
   getApps().length === 0
     ? initializeApp({
         credential: cert(serviceAccount),
       })
     : getApps()[0]
 
-export const db = getFirestore(app)
+export const adminDb = getFirestore(app)

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
-import { db } from "@/lib/firebaseAdmin"
+import { adminDb } from "@/lib/firebaseAdmin"
 
 export async function POST() {
   try {
     const auth = new google.auth.GoogleAuth({
       credentials: JSON.parse(
-        process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON!
+        process.env.GOOGLE_APPLICATION_CREDENTIALS!
       ),
       scopes: ["https://www.googleapis.com/auth/drive.readonly"],
     })
@@ -19,10 +19,10 @@ export async function POST() {
       fields: "files(id, name)",
     })
 
-    const batch = db.batch()
+    const batch = adminDb.batch()
 
     for (const file of res.data.files || []) {
-      batch.set(db.collection("lessons").doc(file.id!), {
+      batch.set(adminDb.collection("lessons").doc(file.id!), {
         title: file.name,
         driveFileId: file.id,
         createdAt: new Date(),
