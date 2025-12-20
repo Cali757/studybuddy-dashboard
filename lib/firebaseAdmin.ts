@@ -5,6 +5,8 @@ if (!admin.apps.length) {
   const serviceAccount = process.env.GOOGLE_APPLICATION_CREDENTIALS
     ? JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS)
     : {
+        type: "service_account",
+        project_id: process.env.GCP_PROJECT_ID,
         client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
         private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
       };
@@ -14,4 +16,5 @@ if (!admin.apps.length) {
   });
 }
 
-export const adminDb = admin.firestore();
+const db = admin.firestore();
+export { db as adminDb };
