@@ -1,15 +1,27 @@
-import { getApps, initializeApp, cert } from "firebase-admin/app"
-import { getFirestore } from "firebase-admin/firestore"
+import { getApps, initializeApp, cert, App } from "firebase-admin/app"
+import { getFirestore, Firestore } from "firebase-admin/firestore"
 
-const serviceAccount = JSON.parse(
-  process.env.GOOGLE_APPLICATION_CREDENTIALS!
-)
+let app: App | null = null;
+let adminDb: Firestore | null = null;
 
-const app = 
-  getApps().length === 0
-    ? initializeApp({
-        credential: cert(serviceAccount),
-      })
-    : getApps()[0]
+export function getAdminDb(): Firestore {
+  if (adminDb) return adminDb;
 
-export const adminDb = getFirestore(app)
+  const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  if (!credentialsJson) {
+    throw new Error('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set');
+  }
+
+  const serviceAccount = JSON.parse(credentialsJson);
+
+  if (getApps().length === 0) {
+    app = initializeApp({
+      credential: cert(serviceAccount),
+    });
+  } else {
+    app = getApps()[0];
+  }
+
+  adminDb = getFirestore(app);
+  return adminDb;
+}

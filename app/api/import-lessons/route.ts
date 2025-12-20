@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { google } from "googleapis"
-import { adminDb } from "@/lib/firebaseAdmin"
+import { getAdminDb } from "@/lib/firebaseAdmin"
 
 export async function POST() {
   try {
@@ -19,10 +19,10 @@ export async function POST() {
       fields: "files(id, name)",
     })
 
-    const batch = adminDb.batch()
+    const batch = getAdminDb().batch()
 
     for (const file of res.data.files || []) {
-      batch.set(adminDb.collection("lessons").doc(file.id!), {
+      batch.set(getAdminDb().collection("lessons").doc(file.id!), {
         title: file.name,
         driveFileId: file.id,
         createdAt: new Date(),
