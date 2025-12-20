@@ -7,6 +7,8 @@ import { getUserReferralCode, getReferralStats, getReferralHistory } from '@/lib
 import { getPendingRewards, claimAllRewards } from '@/lib/referralRewards';
 import { useRequireAuth } from '@/lib/useRequireAuth';
 
+export const dynamic = 'force-dynamic';
+
 export default function ReferralsPage() {
   const { loading: authLoading } = useRequireAuth();
   const router = useRouter();

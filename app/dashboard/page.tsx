@@ -1,12 +1,14 @@
 "use client";
 import { useRequireAuth } from "@/lib/useRequireAuth";
-import { getAuth } from "firebase/auth";
-import app from "@/lib/firebase";
+// import { getAuth } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+
+export const dynamic = 'force-dynamic';
 
 export default function Dashboard() {
   const loading = useRequireAuth();
-  const auth = getAuth(app);
-  const user = auth.currentUser;
+  // const auth = getAuth(app);
+  const user = auth?.currentUser;
 
   if (loading) return <div style={{ padding: 40 }}><p>Loading dashboard...</p></div>;
 

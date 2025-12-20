@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import app from "@/lib/firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +11,6 @@ export default function SignupPage() {
   console.log("Signup page rendered"); // 🔍 DEBUG
 
   const router = useRouter();
-  const auth = getAuth(app);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 

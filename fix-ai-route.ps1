@@ -1,8 +1,6 @@
+$content = @'
 import { NextResponse } from "next/server";
 import { VertexAI } from "@google-cloud/vertexai";
-
-// Force dynamic rendering for this route
-export const dynamic = 'force-dynamic'
 
 const SYSTEM_PROMPT = `
 You are StudyBuddy, a friendly AI tutor.
@@ -57,3 +55,7 @@ ${message}
     );
   }
 }
+'@
+
+$content | Out-File -FilePath "app\api\ai\route.ts" -Encoding utf8 -NoNewline
+Write-Host "File updated successfully!"
