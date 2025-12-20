@@ -12,6 +12,8 @@
     "@google-cloud/vertexai": "^1.10.0",
     "@stripe/stripe-js": "^8.6.0",
     "firebase": "^12.6.0",
+    "firebase-admin": "^13.6.0",
+    "googleapis": "^169.0.0",
     "next": "16.0.10",
     "react": "19.2.1",
     "react-dom": "19.2.1",
